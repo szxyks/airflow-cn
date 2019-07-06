@@ -10,3 +10,4 @@ unittests.cfg
 airflow-webserver.pid
 git_version
 .idea/
+dags/*
