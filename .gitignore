@@ -1,0 +1,12 @@
+.eggs/
+__pycache__/
+venv/
+build/
+dist/
+logs/
+airflow.cfg
+airflow.db
+unittests.cfg
+airflow-webserver.pid
+git_version
+.idea/
