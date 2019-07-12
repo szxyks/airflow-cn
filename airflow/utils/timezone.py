@@ -67,7 +67,6 @@ def utcnow():
     # pendulum utcnow() is not used as that sets a TimezoneInfo object
     # instead of a Timezone. This is not pickable and also creates issues
     # when using replace()
-    # d = dt.datetime.utcnow()
     d = dt.datetime.now()
     d = d.replace(tzinfo=utc)
 

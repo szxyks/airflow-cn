@@ -34,10 +34,11 @@ from sqlalchemy import event, exc, select
 from sqlalchemy.types import Text, DateTime, TypeDecorator
 
 from airflow.utils.log.logging_mixin import LoggingMixin
+from airflow import configuration as conf
+
 
 log = LoggingMixin().log
 utc = pendulum.timezone('UTC')
-from airflow import configuration as conf
 try:
 	tz = conf.get("core", "default_timezone")
 	if tz == "system":
