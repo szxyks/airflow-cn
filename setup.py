@@ -226,7 +226,7 @@ sendgrid = ['sendgrid>=5.2.0,<6']
 slack = ['slackclient>=1.0.0']
 mongo = ['pymongo>=3.6.0']
 snowflake = ['snowflake-connector-python>=1.5.2',
-             'snowflake-sqlalchemy>=1.1.0']
+             'snowflake-sqlalchemy>=1.3.0']
 ssh = ['paramiko>=2.1.1', 'pysftp>=0.2.9', 'sshtunnel>=0.1.4,<0.2']
 statsd = ['statsd>=3.0.1, <4.0']
 vertica = ['vertica-python>=0.5.1']
@@ -319,7 +319,7 @@ def do_setup():
             'python-dateutil>=2.3, <3',
             'requests>=2.20.0, <3',
             'setproctitle>=1.1.8, <2',
-            'sqlalchemy>=1.1.15, <1.3.0',
+            'sqlalchemy>=1.3.0',
             'tabulate>=0.7.5, <0.9',
             'tenacity==4.12.0',
             'text-unidecode==1.2',
