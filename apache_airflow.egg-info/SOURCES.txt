@@ -659,7 +659,6 @@ airflow/www_rbac/blueprints.py
 airflow/www_rbac/compile_assets.sh
 airflow/www_rbac/decorators.py
 airflow/www_rbac/forms.py
-airflow/www_rbac/package-lock.json
 airflow/www_rbac/package.json
 airflow/www_rbac/security.py
 airflow/www_rbac/static_config.py
