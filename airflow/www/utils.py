@@ -23,7 +23,6 @@ from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 from builtins import str, object
 
-from cgi import escape
 from io import BytesIO as IO
 import functools
 import gzip
@@ -46,6 +45,13 @@ from airflow import configuration, models, settings
 from airflow.utils.db import create_session
 from airflow.utils import timezone
 from airflow.utils.json import AirflowJsonEncoder
+
+try:
+    # cgi.escape has been deprecated since 3.3 and removed in 3.8
+    from html import escape
+except ImportError:
+    # Use cgi.escape for Python 2
+    from cgi import escape  # type: ignore
 
 AUTHENTICATE = configuration.conf.getboolean('webserver', 'AUTHENTICATE')
 
@@ -137,11 +143,11 @@ def generate_pages(current_page, num_of_pages,
 </li>""")
 
     previous_node = Markup("""<li class="paginate_button previous {disabled}" id="dags_previous">
-    <a href="{href_link}" aria-controls="dags" data-dt-idx="0" tabindex="0">&lt;</a>
+    <a href="{href_link}" aria-controls="dags" data-dt-idx="0" tabindex="0">&lsaquo;</a>
 </li>""")
 
     next_node = Markup("""<li class="paginate_button next {disabled}" id="dags_next">
-    <a href="{href_link}" aria-controls="dags" data-dt-idx="3" tabindex="0">&gt;</a>
+    <a href="{href_link}" aria-controls="dags" data-dt-idx="3" tabindex="0">&rsaquo;</a>
 </li>""")
 
     last_node = Markup("""<li class="paginate_button {disabled}" id="dags_last">
@@ -222,21 +228,21 @@ def limit_sql(sql, limit, conn_type):
             SELECT TOP {limit} * FROM (
             {sql}
             ) qry
-            """.format(**locals())
+            """.format(limit=limit, sql=sql)
         elif conn_type in ['oracle']:
             sql = """\
             SELECT * FROM (
             {sql}
             ) qry
             WHERE ROWNUM <= {limit}
-            """.format(**locals())
+            """.format(limit=limit, sql=sql)
         else:
             sql = """\
             SELECT * FROM (
             {sql}
             ) qry
             LIMIT {limit}
-            """.format(**locals())
+            """.format(limit=limit, sql=sql)
     return sql
 
 
@@ -371,6 +377,9 @@ def gzipped(f):
     return view_func
 
 
+ZIP_REGEX = re.compile(r'((.*\.zip){})?(.*)'.format(re.escape(os.sep)))
+
+
 def open_maybe_zipped(f, mode='r'):
     """
     Opens the given file. If the path contains a folder with a .zip suffix, then
@@ -379,8 +388,7 @@ def open_maybe_zipped(f, mode='r'):
     :return: a file object, as in `open`, or as in `ZipFile.open`.
     """
 
-    _, archive, filename = re.search(
-        r'((.*\.zip){})?(.*)'.format(re.escape(os.sep)), f).groups()
+    _, archive, filename = ZIP_REGEX.search(f).groups()
     if archive and zipfile.is_zipfile(archive):
         return zipfile.ZipFile(archive, mode=mode).open(filename)
     else:
@@ -446,6 +454,8 @@ class AceEditorWidget(wtforms.widgets.TextArea):
 class UtcDateTimeFilterMixin(object):
     def clean(self, value):
         dt = super(UtcDateTimeFilterMixin, self).clean(value)
+        if isinstance(dt, list):
+            return [timezone.make_aware(d, timezone=timezone.utc) for d in dt]
         return timezone.make_aware(dt, timezone=timezone.utc)
 
 

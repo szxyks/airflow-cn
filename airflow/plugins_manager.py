@@ -31,6 +31,7 @@ import pkg_resources
 from typing import List, Any
 
 from airflow import settings
+from airflow.models.baseoperator import BaseOperatorLink
 from airflow.utils.log.logging_mixin import LoggingMixin
 
 log = LoggingMixin().log
@@ -54,6 +55,7 @@ class AirflowPlugin(object):
     menu_links = []  # type: List[Any]
     appbuilder_views = []  # type: List[Any]
     appbuilder_menu_items = []  # type: List[Any]
+    global_operator_extra_links = []  # type: List[BaseOperatorLink]
 
     @classmethod
     def validate(cls):
@@ -118,6 +120,9 @@ plugins = []  # type: List[AirflowPlugin]
 
 norm_pattern = re.compile(r'[/|.]')
 
+if settings.PLUGINS_FOLDER is None:
+    raise AirflowPluginException("Plugins folder is not set")
+
 # Crawl through the plugins folder to find AirflowPlugin derivatives
 for root, dirs, files in os.walk(settings.PLUGINS_FOLDER, followlinks=True):
     for f in files:
@@ -173,6 +178,7 @@ flask_blueprints = []  # type: List[Any]
 menu_links = []  # type: List[Any]
 flask_appbuilder_views = []  # type: List[Any]
 flask_appbuilder_menu_links = []  # type: List[Any]
+global_operator_extra_links = []  # type: List[Any]
 
 for p in plugins:
     operators_modules.append(
@@ -193,3 +199,4 @@ for p in plugins:
         'name': p.name,
         'blueprint': bp
     } for bp in p.flask_blueprints])
+    global_operator_extra_links.extend(p.global_operator_extra_links)

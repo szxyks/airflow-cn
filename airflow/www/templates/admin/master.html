@@ -1,19 +1,21 @@
-<!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-  contributor license agreements.  See the NOTICE file distributed with
-  this work for additional information regarding copyright ownership.
-  The ASF licenses this file to You under the Apache License, Version 2.0
-  (the "License"); you may not use this file except in compliance with
-  the License.  You may obtain a copy of the License at
+{#
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+   http://www.apache.org/licenses/LICENSE-2.0
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+#}
 
 {% extends 'admin/base.html' %}
 {% block head_css %}
@@ -28,15 +30,18 @@
 <script src="{{ url_for('static', filename='jqClock.min.js') }}" type="text/javascript"></script>
 <script>
     x = new Date()
+<!--    var UTCseconds = (x.getTime() + x.getTimezoneOffset()*60*1000);-->
     var UTCseconds = x.getTime();
     $("#clock").clock({
         "dateFormat":"Y-m-d ",
-        "timeFormat":"H:i:s",
+<!--        "timeFormat":"H:i:s %UTC%",-->
+        "timeFormat":"H:i:s ",
         "timestamp":UTCseconds
     }).click(function(){
         alert('{{ hostname }}');
     });
     $('span').tooltip();
+    $('time[title]').tooltip();
     var CSRF = {{ csrf_token() | tojson }};
 
     $.ajaxSetup({
@@ -82,6 +87,39 @@ function postAsForm(url, parameters) {
   // to submit it.
   $(document.body).append(form);
   form.submit();
+}
+
+function convertSecsToHumanReadable(seconds) {
+   var oriSeconds = seconds
+   var floatingPart = oriSeconds- Math.floor(oriSeconds)
+
+   seconds = Math.floor(seconds)
+
+   var secondsPerHour = 60 * 60;
+   var secondsPerMinute = 60;
+
+   var hours = Math.floor(seconds / secondsPerHour);
+   seconds = seconds - hours * secondsPerHour;
+
+   var minutes = Math.floor(seconds / secondsPerMinute);
+   seconds = seconds - minutes * secondsPerMinute;
+
+   var readableFormat = ''
+   if (hours > 0) {
+     readableFormat += hours + "Hours ";
+   }
+   if (minutes > 0) {
+     readableFormat += minutes + "Min ";
+   }
+   if (seconds + floatingPart > 0) {
+     if (Math.floor(oriSeconds) === oriSeconds) {
+       readableFormat += seconds + "Sec";
+     } else {
+       seconds += floatingPart
+       readableFormat += seconds.toFixed(3) + "Sec";
+     }
+   }
+   return readableFormat
 }
 </script>
 {% endblock %}
@@ -137,6 +175,16 @@ function postAsForm(url, parameters) {
       </div>
 </nav>
   {% block messages %}
+  {% if scheduler_job is defined and (not scheduler_job or not scheduler_job.is_alive()) %}
+    <div class="alert alert-warning">
+      <p>The scheduler does not appear to be running.
+      {% if scheduler_job %}
+      Last heartbeat was received <time title="{{ scheduler_job.latest_heartbeat.isoformat() }}" datetime="{{ scheduler_job.latest_heartbeat.isoformat() }}">{{ macros.datetime_diff_for_humans(scheduler_job.latest_heartbeat) }}</time>.
+      {% endif %}
+      </p>
+      <p>The DAGs list may not update, and new tasks will not be scheduled.</p>
+    </div>
+  {% endif %}
   {{ layout.messages() }}
   {% endblock %}
 
@@ -148,4 +196,3 @@ function postAsForm(url, parameters) {
 
 </div>
 {% endblock %}
-

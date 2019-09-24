@@ -19,21 +19,20 @@
 #
 import datetime as dt
 import pendulum
-
+from airflow import configuration as conf
 from airflow.settings import TIMEZONE
 
 
 # UTC time zone as a tzinfo instance.
 utc = pendulum.timezone('UTC')
-from airflow import configuration as conf
 try:
-	tz = conf.get("core", "default_timezone")
-	if tz == "system":
-		utc = pendulum.local_timezone()
-	else:
-		utc = pendulum.timezone(tz)
+    tz = conf.get("core", "default_timezone")
+    if tz == "system":
+        utc = pendulum.local_timezone()
+    else:
+        utc = pendulum.timezone(tz)
 except Exception:
-	pass
+    pass
 
 
 def is_localized(value):
@@ -67,6 +66,7 @@ def utcnow():
     # pendulum utcnow() is not used as that sets a TimezoneInfo object
     # instead of a Timezone. This is not pickable and also creates issues
     # when using replace()
+    # d = dt.datetime.utcnow()
     d = dt.datetime.now()
     d = d.replace(tzinfo=utc)
 
@@ -120,7 +120,12 @@ def make_aware(value, timezone=None):
     if is_localized(value):
         raise ValueError(
             "make_aware expects a naive datetime, got %s" % value)
-
+    if hasattr(value, 'fold'):
+        # In case of python 3.6 we want to do the same that pendulum does for python3.5
+        # i.e in case we move clock back we want to schedule the run at the time of the second
+        # instance of the same clock time rather than the first one.
+        # Fold parameter has no impact in other cases so we can safely set it to 1 here
+        value = value.replace(fold=1)
     if hasattr(timezone, 'localize'):
         # This method is available for pytz time zones.
         return timezone.localize(value)

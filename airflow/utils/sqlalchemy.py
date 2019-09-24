@@ -40,13 +40,13 @@ from airflow import configuration as conf
 log = LoggingMixin().log
 utc = pendulum.timezone('UTC')
 try:
-	tz = conf.get("core", "default_timezone")
-	if tz == "system":
-		utc = pendulum.local_timezone()
-	else:
-		utc = pendulum.timezone(tz)
+    tz = conf.get("core", "default_timezone")
+    if tz == "system":
+        utc = pendulum.local_timezone()
+    else:
+        utc = pendulum.timezone(tz)
 except Exception:
-	pass
+    pass
 
 
 def setup_event_handlers(engine,
@@ -88,7 +88,13 @@ def setup_event_handlers(engine,
                         err)
                     raise
                 if err.connection_invalidated:
-                    log.warning("DB connection invalidated. Reconnecting...")
+                    # Don't log the first time -- this happens a lot and unless
+                    # there is a problem reconnecting is not a sign of a
+                    # problem
+                    if backoff > initial_backoff_seconds:
+                        log.warning("DB connection invalidated. Reconnecting...")
+                    else:
+                        log.debug("DB connection invalidated. Initial reconnect")
 
                     # Use a truncated binary exponential backoff. Also includes
                     # a jitter to prevent the thundering herd problem of

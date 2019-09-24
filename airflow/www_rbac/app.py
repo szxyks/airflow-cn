@@ -27,8 +27,8 @@ from flask_appbuilder import AppBuilder, SQLA
 from flask_caching import Cache
 from flask_wtf.csrf import CSRFProtect
 from six.moves.urllib.parse import urlparse
-from werkzeug.wsgi import DispatcherMiddleware
-from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from airflow import settings
 from airflow import configuration as conf
@@ -45,7 +45,15 @@ def create_app(config=None, session=None, testing=False, app_name="Airflow"):
     global app, appbuilder
     app = Flask(__name__)
     if conf.getboolean('webserver', 'ENABLE_PROXY_FIX'):
-        app.wsgi_app = ProxyFix(app.wsgi_app)
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            num_proxies=None,
+            x_for=1,
+            x_proto=1,
+            x_host=1,
+            x_port=1,
+            x_prefix=1
+        )
     app.secret_key = conf.get('webserver', 'SECRET_KEY')
 
     app.config.from_pyfile(settings.WEBSERVER_CONFIG, silent=True)
@@ -66,7 +74,7 @@ def create_app(config=None, session=None, testing=False, app_name="Airflow"):
 
     from airflow import api
     api.load_auth()
-    api.api_auth.init_app(app)
+    api.API_AUTH.api_auth.init_app(app)
 
     # flake8: noqa: F841
     cache = Cache(app=app, config={'CACHE_TYPE': 'filesystem', 'CACHE_DIR': '/tmp'})
@@ -194,11 +202,20 @@ def create_app(config=None, session=None, testing=False, app_name="Airflow"):
         app.register_blueprint(e.api_experimental, url_prefix='/api/experimental')
 
         @app.context_processor
-        def jinja_globals():
-            return {
+        def jinja_globals():  # pylint: disable=unused-variable
+
+            globals = {
                 'hostname': socket.getfqdn(),
                 'navbar_color': conf.get('webserver', 'NAVBAR_COLOR'),
             }
+
+            if 'analytics_tool' in conf.getsection('webserver'):
+                globals.update({
+                    'analytics_tool': conf.get('webserver', 'ANALYTICS_TOOL'),
+                    'analytics_id': conf.get('webserver', 'ANALYTICS_ID')
+                })
+
+            return globals
 
         @app.teardown_appcontext
         def shutdown_session(exception=None):

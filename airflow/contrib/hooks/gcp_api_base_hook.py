@@ -64,17 +64,16 @@ class GoogleCloudBaseHook(BaseHook):
     Legacy P12 key files are not supported.
 
     JSON data provided in the UI: Specify 'Keyfile JSON'.
+
+    :param gcp_conn_id: The connection ID to use when fetching connection info.
+    :type gcp_conn_id: str
+    :param delegate_to: The account to impersonate, if any.
+        For this to work, the service account making the request must have
+        domain-wide delegation enabled.
+    :type delegate_to: str
     """
 
     def __init__(self, gcp_conn_id='google_cloud_default', delegate_to=None):
-        """
-        :param gcp_conn_id: The connection ID to use when fetching connection info.
-        :type gcp_conn_id: str
-        :param delegate_to: The account to impersonate, if any.
-            For this to work, the service account making the request must have
-            domain-wide delegation enabled.
-        :type delegate_to: str
-        """
         self.gcp_conn_id = gcp_conn_id
         self.delegate_to = delegate_to
         self.extras = self.get_connection(self.gcp_conn_id).extra_dejson
@@ -161,6 +160,16 @@ class GoogleCloudBaseHook(BaseHook):
     @property
     def project_id(self):
         return self._get_field('project')
+
+    @property
+    def num_retries(self):
+        """
+        Returns num_retries from Connection.
+
+        :return: the number of times each API request should be retried
+        :rtype: int
+        """
+        return self._get_field('num_retries') or 5
 
     @staticmethod
     def catch_http_exception(func):

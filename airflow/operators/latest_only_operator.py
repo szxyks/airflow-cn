@@ -17,9 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from airflow.models import BaseOperator
-from airflow.models.skipmixin import SkipMixin
-from airflow.utils import timezone
+import pendulum
+
+from airflow.models import BaseOperator, SkipMixin
 
 
 class LatestOnlyOperator(BaseOperator, SkipMixin):
@@ -40,7 +40,7 @@ class LatestOnlyOperator(BaseOperator, SkipMixin):
             self.log.info("Externally triggered DAG_Run: allowing execution to proceed.")
             return
 
-        now = timezone.utcnow()
+        now = pendulum.utcnow()
         left_window = context['dag'].following_schedule(
             context['execution_date'])
         right_window = context['dag'].following_schedule(left_window)
